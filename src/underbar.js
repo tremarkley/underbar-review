@@ -173,16 +173,37 @@
   //   }); // should be 5, regardless of the iterator function passed in
   //          No accumulator is given so the first element is used.
   _.reduce = function(collection, iterator, accumulator) {
-    let copyCollection = collection.slice();
-    if (accumulator === undefined) {
-      accumulator = copyCollection.shift();
+    // if (Array.isArray(collection)) {
+    //   let copyCollection = collection.slice();
+    
+    // if (accumulator === undefined) {
+    //   accumulator = copyCollection.shift();
+    // }
+    // _.each(copyCollection, function(value, index) {
+    //   let temp = iterator(accumulator, value);
+    //   if (temp !== undefined) {
+    //     accumulator = temp;
+    //   // } else {
+    //   //   accumulator = 0;
+    //   }
+    // });
+    // return accumulator;
+    var hasAccumulator = false;
+    if (accumulator !== undefined) {
+      hasAccumulator = true;
     }
-    _.each(copyCollection, function(value, index) {
-      let temp = iterator(accumulator, value);
-      if (temp !== undefined) {
-        accumulator = temp;
-      // } else {
-      //   accumulator = 0;
+
+    _.each(collection, function(value, index) {
+      if (!hasAccumulator) {
+        accumulator = value;
+        hasAccumulator = true;
+      } else {
+        let temp = iterator(accumulator, value);
+        if (temp !== undefined) {
+          accumulator = temp;
+        } else {
+          accumulator = 0;
+        }
       }
     });
     return accumulator;
@@ -204,12 +225,41 @@
   // Determine whether all of the elements match a truth test.
   _.every = function(collection, iterator) {
     // TIP: Try re-using reduce() here.
+    if (iterator === undefined) {
+      iterator = function(value) { return value; };
+    }
+    return _.reduce(collection, function(wasFound, item) {
+      if (!wasFound) {
+        return false;
+      }
+      return !!iterator(item);
+    }, true);
   };
 
   // Determine whether any of the elements pass a truth test. If no iterator is
   // provided, provide a default one
   _.some = function(collection, iterator) {
     // TIP: There's a very clever way to re-use every() here.
+    if (iterator === undefined) {
+      iterator = function(value) { return value; };
+    }
+    return !_.every(collection, function(item) {
+      if (!iterator(item)) {
+        return true;
+      } else {
+        return false;
+      }
+    });
+  // simple solution
+  //   if (iterator === undefined) {
+  //     iterator = function(value) { return value; };
+  //   }
+  //   return _.reduce(collection, function(wasFound, item) {
+  //     if (wasFound) {
+  //       return true;
+  //     }
+  //     return !!iterator(item);
+  //   }, false);
   };
 
 
@@ -232,11 +282,29 @@
   //     bla: "even more stuff"
   //   }); // obj1 now contains key1, key2, key3 and bla
   _.extend = function(obj) {
+    _.each(arguments, function(object, objIndex) {
+      if (objIndex !== 0) {
+        _.each(object, function(value, key) {
+          obj[key] = value;
+        });
+      }
+    });
+    return obj;
   };
 
   // Like extend, but doesn't ever overwrite a key that already
   // exists in obj
   _.defaults = function(obj) {
+    _.each(arguments, function(object, objIndex) {
+      if (objIndex !== 0) {
+        _.each(object, function(value, key) {
+          if (obj[key] === undefined) {
+            obj[key] = value;
+          }
+        });
+      }
+    });
+    return obj;
   };
 
 
@@ -280,6 +348,15 @@
   // already computed the result for the given argument and return that value
   // instead if possible.
   _.memoize = function(func) {
+    var result = {};
+    
+    return function() {
+      let args = JSON.stringify(arguments);
+      if (result[args] === undefined) {
+        result[args] = func.apply(this, arguments);
+      }
+      return result[args];
+    };
   };
 
   // Delays a function for the given number of milliseconds, and then calls
@@ -289,6 +366,10 @@
   // parameter. For example _.delay(someFunction, 500, 'a', 'b') will
   // call someFunction('a', 'b') after 500ms
   _.delay = function(func, wait) {
+    let args = Array.from(arguments).slice(2);
+    setTimeout(function() {
+      func.apply(this, args);
+    }, wait);
   };
 
 
@@ -303,6 +384,17 @@
   // input array. For a tip on how to make a copy of an array, see:
   // http://mdn.io/Array.prototype.slice
   _.shuffle = function(array) {
+    let result = [];
+    let usedIndex = {};
+    
+    while (result.length < array.length) {
+      let randomNum = Math.floor(Math.random() * array.length);
+      if (usedIndex[randomNum] === undefined) {
+        result.push(array[randomNum]);
+        usedIndex[randomNum] = randomNum;
+      }
+    }
+    return result;
   };
 
 
